@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sniper Fury — Game Bắn Tỉa</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+
+<!-- HUD trong lúc chơi -->
+<div id="hud" class="hidden">
+  <div class="hud-top">
+    <div class="hud-box" id="hudLevel">MÀN 1</div>
+    <div class="hud-box" id="hudTargets">Mục tiêu: 0/0</div>
+    <div class="hud-box" id="hudTime">⏱ 60s</div>
+    <div class="hud-box" id="hudWind">Gió: —</div>
+    <div class="hud-box" id="hudAmmo">🔫 5 / 15</div>
+    <div class="hud-box" id="hudScore">Điểm: 0</div>
+  </div>
+  <div id="hudMessage" class="hidden"></div>
+  <div id="breathBar"><div id="breathFill"></div></div>
+  <div id="reloadBar" class="hidden"><div id="reloadFill"></div></div>
+</div>
+
+<!-- Menu chính -->
+<div id="menuScreen" class="screen">
+  <h1 class="game-title">SNIPER <span>FURY</span></h1>
+  <p class="subtitle">Xạ thủ bắn tỉa — 10 màn từ dễ đến khó</p>
+  <div class="menu-buttons">
+    <button id="btnStart" class="btn btn-primary">▶ BẮT ĐẦU</button>
+    <button id="btnLevels" class="btn">🎯 CHỌN MÀN</button>
+    <button id="btnHowTo" class="btn">❓ HƯỚNG DẪN</button>
+  </div>
+  <p class="total-score" id="totalScore"></p>
+</div>
+
+<!-- Chọn màn -->
+<div id="levelScreen" class="screen hidden">
+  <h2>CHỌN MÀN CHƠI</h2>
+  <div id="levelGrid"></div>
+  <button id="btnBackMenu" class="btn">← Quay lại</button>
+</div>
+
+<!-- Hướng dẫn -->
+<div id="howtoScreen" class="screen hidden">
+  <h2>HƯỚNG DẪN</h2>
+  <div class="howto-content">
+    <p>🖱️ <b>Di chuột</b> — ngắm bắn qua ống ngắm</p>
+    <p>🖱️ <b>Click chuột trái</b> — bắn</p>
+    <p>⌨️ <b>R</b> — nạp đạn &nbsp;|&nbsp; <b>Space / Shift</b> — giữ hơi (ngắm ổn định)</p>
+    <p>⌨️ <b>Esc / P</b> — tạm dừng</p>
+    <p>💀 Bắn hết <b>quân địch</b> để qua màn. Đầu = 250 điểm, thân = 100 điểm.</p>
+    <p>⚠️ <b>TUYỆT ĐỐI</b> không bắn dân thường (áo trắng, giơ tay)!</p>
+    <p>🌬️ Chú ý <b>chỉ số gió</b> — đạn sẽ bị lệch theo hướng gió.</p>
+  </div>
+  <button id="btnBackMenu2" class="btn">← Quay lại</button>
+</div>
+
+<!-- Kết thúc màn -->
+<div id="resultScreen" class="screen hidden">
+  <h2 id="resultTitle">HOÀN THÀNH!</h2>
+  <div id="resultStars" class="stars"></div>
+  <div class="result-stats" id="resultStats"></div>
+  <div class="menu-buttons">
+    <button id="btnNext" class="btn btn-primary">MÀN TIẾP THEO →</button>
+    <button id="btnRetry" class="btn">🔄 CHƠI LẠI</button>
+    <button id="btnMenu" class="btn">🏠 MENU</button>
+  </div>
+</div>
+
+<!-- Tạm dừng -->
+<div id="pauseScreen" class="screen hidden">
+  <h2>TẠM DỪNG</h2>
+  <div class="menu-buttons">
+    <button id="btnResume" class="btn btn-primary">▶ TIẾP TỤC</button>
+    <button id="btnRestart" class="btn">🔄 CHƠI LẠI</button>
+    <button id="btnQuit" class="btn">🏠 MENU</button>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/game.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
