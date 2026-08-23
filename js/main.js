@@ -84,8 +84,20 @@
     $('hud').classList.toggle('hidden', name !== null || game.state === 'idle');
   }
 
+  /* Yêu cầu toàn màn hình + khóa hướng ngang (mobile) */
+  function goLandscape() {
+    try {
+      const el = document.documentElement;
+      if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(() => {});
+      }
+    } catch (e) { /* bỏ qua */ }
+  }
+
   function startLevel(idx) {
     currentLevel = idx;
+    goLandscape();
     game.setWeapon(Progress.data.selected);
     game.audio.init();
     game.audio.resume();
@@ -254,6 +266,31 @@
   /* ---------- Điều khiển mobile ---------- */
   const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
   if (isTouch) $('mobileControls').classList.remove('hidden');
+
+  /* ---------- Gợi ý xoay ngang màn hình (mobile) ---------- */
+  if (isTouch) {
+    const st = document.createElement('style');
+    st.textContent =
+      '#rotateHint{position:fixed;inset:0;z-index:9999;background:#0a0f08;display:none;' +
+      'flex-direction:column;align-items:center;justify-content:center;color:#cfe8b0;' +
+      'font-family:"Segoe UI",Arial;text-align:center}' +
+      '#rotateHint.show{display:flex}' +
+      '.rot-icon{font-size:64px;margin-bottom:16px;animation:rotPulse 1.2s infinite}' +
+      '@keyframes rotPulse{0%,100%{transform:rotate(0)}50%{transform:rotate(90deg)}}';
+    document.head.appendChild(st);
+
+    const rot = document.createElement('div');
+    rot.id = 'rotateHint';
+    rot.innerHTML = '<div class="rot-icon">📱</div>' +
+      '<p>Xoay <b>NGANG</b> màn hình<br>để có trải nghiệm tốt nhất!</p>';
+    document.body.appendChild(rot);
+
+    const updRot = () =>
+      rot.classList.toggle('show', matchMedia('(orientation: portrait)').matches);
+    addEventListener('resize', updRot);
+    addEventListener('orientationchange', () => setTimeout(updRot, 150));
+    updRot();
+  }
   $('mBtnScope').addEventListener('click', () => game.toggleScope());
   $('mBtnFire').addEventListener('click', () => game.fireButton());
   $('mBtnReload').addEventListener('click', () => game.reloadButton());

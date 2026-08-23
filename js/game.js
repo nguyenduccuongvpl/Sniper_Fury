@@ -72,6 +72,7 @@
       this.viewW = 0; this.viewH = 0;
       this.camX = 0; this.camY = 0;
       this.aim = { x: 0, y: 0 };
+      this.px = 0; this.py = 0;   // điểm thế giới NGAY DƯỚI con trỏ/ngón tay
 
       this.swayT = 0;
       this.shake = 0;
@@ -460,8 +461,9 @@
       const sway = this.currentSway(this.holdingBreath());
       const windOff = this.level.wind * C.WIND_OFFSET * this.weapon.windMul;
       // Điểm bắn = TÂM MÀN HÌNH trong thế giới — khớp 100% với tâm chữ thập
-      const ax = this.camX + this.viewW / 2;
-      const ay = this.camY + this.viewH / 2;
+      // Điểm bắn = đúng điểm thế giới dưới con trỏ/ngón tay
+      const ax = this.px;
+      const ay = this.py;
       let ix = ax + sway.x + windOff;
       let iy = ay + sway.y;
 
@@ -823,6 +825,10 @@
       this.camX = clamp(this.aim.x - this.viewW / 2, 0, C.WORLD_W - this.viewW);
       this.camY = clamp(this.aim.y - this.viewH / 2, 0, C.WORLD_H - this.viewH);
 
+      // Điểm thế giới ngay dưới con trỏ/ngón tay - nguồn sự thật duy nhất
+      this.px = this.camX + this.mouse.x;
+      this.py = this.camY + this.mouse.y;
+
       // Rung + giật
       const shX = (Math.random() - 0.5) * this.shake;
       const shY = (Math.random() - 0.5) * this.shake;
@@ -833,9 +839,11 @@
       if (this.scoped) {
         // Chế độ ống ngắm: phóng đại quanh TÂM MÀN HÌNH
         // => mục tiêu dưới tâm chữ thập giữ nguyên vị trí khi bật/tắt zoom
-        ctx.translate(this.viewW / 2 + shX, this.viewH / 2 + shY);
+        // Zoom quanh DUNG diem con tro dang chi
+        // => muc tieu duoi tam ngam KHONG BAO GIO dich khi bat/tat zoom
+        ctx.translate(this.mouse.x + shX, this.mouse.y + shY);
         ctx.scale(this.weapon.zoom, this.weapon.zoom);
-        ctx.translate(-(this.camX + this.viewW / 2), -(this.camY + this.viewH / 2));
+        ctx.translate(-this.px, -this.py);
       } else {
         ctx.translate(-this.camX + shX, -this.camY + shY);
       }
@@ -1349,13 +1357,15 @@
 
     /* ---------- Ống ngắm (khi ngắm) ---------- */
     drawScopeOverlay(ctx) {
-      const cx = this.viewW / 2, cy = this.viewH / 2;
+      // Vòng ống ngắm BÁM THEO con trỏ/ngón tay (kẹp trong màn hình)
       const R = Math.min(this.viewW, this.viewH) * 0.46;
-      // Chữ thập vẽ tại ĐIỂM ĐẠN SẼ CHẠM (gồm cả độ lắc + độ lệch gió)
-      // => nhìn đâu trúng đó, không còn tình trạng "bắn vào chỗ khác"
+      const cx = clamp(this.mouse.x, R, this.viewW - R);
+      const cy = clamp(this.mouse.y, R, this.viewH - R);
+      // Chữ thập vẽ tại ĐIỂM ĐẠN SẼ CHẠM (độ lắc + gió, nhân zoom vì đang phóng đại)
       const sway = this.currentSway(this.holdingBreath());
       const windOff = this.level.wind * C.WIND_OFFSET * this.weapon.windMul;
-      const sx = cx + sway.x + windOff, sy = cy + sway.y;
+      const z = this.weapon.zoom;
+      const sx = cx + (sway.x + windOff) * z, sy = cy + sway.y * z;
 
       ctx.save();
       // Nền đen ngoài ống ngắm
@@ -1439,12 +1449,12 @@
       // Chấm ngắm nhỏ (cũng hiển thị điểm đạn sẽ chạm)
       const swayH = this.currentSway(false);
       const windOffH = this.level.wind * C.WIND_OFFSET * this.weapon.windMul;
-      const hx2 = cx + swayH.x + windOffH, hy2 = cy + swayH.y;
+      const hx2 = this.mouse.x + swayH.x + windOffH, hy2 = this.mouse.y + swayH.y;
       ctx.fillStyle = 'rgba(255,80,80,0.9)';
       ctx.beginPath(); ctx.arc(hx2, hy2, 3, 0, TAU); ctx.fill();
       ctx.strokeStyle = 'rgba(255,255,255,0.35)';
       ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(cx, cy, 9, 0, TAU); ctx.stroke();
+      ctx.beginPath(); ctx.arc(hx2, hy2, 9, 0, TAU); ctx.stroke();
 
       this.drawGun(ctx);
     }
