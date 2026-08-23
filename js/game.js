@@ -64,6 +64,7 @@
       this.state = 'idle';       // idle | playing | paused | ended
       this.scoped = false;       // đang nhìn qua ống ngắm?
       this.weapon = window.WEAPONS.barrett;
+      this.isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 
       this.mouse = { x: innerWidth / 2, y: innerHeight / 2 };
       this.keys = {};
@@ -457,9 +458,18 @@
       this.flash = 0.06;
 
       const sway = this.currentSway(this.holdingBreath());
-      const aim = this.aimPoint();
-      const ix = aim.x + sway.x + this.level.wind * C.WIND_OFFSET * this.weapon.windMul;
-      const iy = aim.y + sway.y;
+      const windOff = this.level.wind * C.WIND_OFFSET * this.weapon.windMul;
+      // Điểm bắn = TÂM MÀN HÌNH trong thế giới — khớp 100% với tâm chữ thập
+      const ax = this.camX + this.viewW / 2;
+      const ay = this.camY + this.viewH / 2;
+      let ix = ax + sway.x + windOff;
+      let iy = ay + sway.y;
+
+      // Trợ lực khóa mục tiêu trên mobile: hút đạn vào địch gần điểm ngắm
+      if (this.isTouch) {
+        const assist = this.findAssistTarget(ix, iy);
+        if (assist) { ix = assist.x; iy = assist.y; }
+      }
 
       // Xác định kết quả trúng ngay khi bắn, đạn bay tới mới hiện
       let result = null;
@@ -482,9 +492,9 @@
       }
 
       // Đường đạn bay từ nòng súng đến điểm chạm
-      const dist = Math.hypot(ix - aim.x, iy - aim.y + 300);
+      const dist = Math.hypot(ix - ax, iy - ay + 300);
       this.bullets.push({
-        x1: aim.x + 46, y1: aim.y + 300,
+        x1: ax + 46, y1: ay + 300,
         x2: ix, y2: iy,
         t: 0, dur: Math.max(0.07, dist / C.BULLET_SPEED),
         result
@@ -492,7 +502,7 @@
 
       // Vỏ đạn văng ra
       this.casings.push({
-        x: aim.x + 30, y: aim.y + 250,
+        x: ax + 30, y: ay + 250,
         vx: 120 + Math.random() * 160, vy: -260 - Math.random() * 120,
         rot: Math.random() * TAU, vr: (Math.random() - 0.5) * 14, t: 0
       });
@@ -596,6 +606,21 @@
     fireButton() { if (this.state === 'playing') this.fire(); }
     reloadButton() { if (this.state === 'playing') this.startReload(); }
     setBreath(on) { this.keys['Space'] = !!on; }
+
+    /* Tìm mục tiêu gần điểm ngắm để trợ lực trên mobile */
+    findAssistTarget(ix, iy) {
+      let best = null, bd = Infinity;
+      for (const a of this.actors) {
+        if (a.kind !== 'enemy' || !a.alive || !a.spawned) continue;
+        if (a.peek && !a.peek.up) continue;
+        if (a.state === 'hide' && !a.hideUp) continue;
+        const dh = Math.hypot(ix - a.x, iy - (a.y - 84));   // vùng đầu
+        if (dh < bd && dh < 60) { bd = dh; best = { x: a.x, y: a.y - 84 }; }
+        const db = Math.hypot(ix - a.x, iy - (a.y - 45));   // vùng thân
+        if (db < bd && db < 60) { bd = db; best = { x: a.x, y: a.y - 45 }; }
+      }
+      return best;
+    }
 
     pause() { if (this.state === 'playing') { this.state = 'paused'; if (this.hooks.onPause) this.hooks.onPause(); } }
     resume() { if (this.state === 'paused') { this.state = 'playing'; if (this.hooks.onResume) this.hooks.onResume(); } }
@@ -806,10 +831,11 @@
 
       ctx.save();
       if (this.scoped) {
-        // Chế độ ống ngắm: phóng đại quanh điểm ngắm
+        // Chế độ ống ngắm: phóng đại quanh TÂM MÀN HÌNH
+        // => mục tiêu dưới tâm chữ thập giữ nguyên vị trí khi bật/tắt zoom
         ctx.translate(this.viewW / 2 + shX, this.viewH / 2 + shY);
         ctx.scale(this.weapon.zoom, this.weapon.zoom);
-        ctx.translate(-this.aim.x, -this.aim.y);
+        ctx.translate(-(this.camX + this.viewW / 2), -(this.camY + this.viewH / 2));
       } else {
         ctx.translate(-this.camX + shX, -this.camY + shY);
       }
@@ -1325,8 +1351,11 @@
     drawScopeOverlay(ctx) {
       const cx = this.viewW / 2, cy = this.viewH / 2;
       const R = Math.min(this.viewW, this.viewH) * 0.46;
+      // Chữ thập vẽ tại ĐIỂM ĐẠN SẼ CHẠM (gồm cả độ lắc + độ lệch gió)
+      // => nhìn đâu trúng đó, không còn tình trạng "bắn vào chỗ khác"
       const sway = this.currentSway(this.holdingBreath());
-      const sx = cx + sway.x * 0.4, sy = cy + sway.y * 0.4;
+      const windOff = this.level.wind * C.WIND_OFFSET * this.weapon.windMul;
+      const sx = cx + sway.x + windOff, sy = cy + sway.y;
 
       ctx.save();
       // Nền đen ngoài ống ngắm
@@ -1407,9 +1436,12 @@
       ctx.fillStyle = vg;
       ctx.fillRect(0, 0, this.viewW, this.viewH);
 
-      // Chấm ngắm nhỏ
+      // Chấm ngắm nhỏ (cũng hiển thị điểm đạn sẽ chạm)
+      const swayH = this.currentSway(false);
+      const windOffH = this.level.wind * C.WIND_OFFSET * this.weapon.windMul;
+      const hx2 = cx + swayH.x + windOffH, hy2 = cy + swayH.y;
       ctx.fillStyle = 'rgba(255,80,80,0.9)';
-      ctx.beginPath(); ctx.arc(cx, cy, 3, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(hx2, hy2, 3, 0, TAU); ctx.fill();
       ctx.strokeStyle = 'rgba(255,255,255,0.35)';
       ctx.lineWidth = 1;
       ctx.beginPath(); ctx.arc(cx, cy, 9, 0, TAU); ctx.stroke();
