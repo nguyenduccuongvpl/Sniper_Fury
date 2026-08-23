@@ -102,6 +102,7 @@
     bindInput() {
       addEventListener('mousemove', (e) => { this.mouse.x = e.clientX; this.mouse.y = e.clientY; });
       addEventListener('mousedown', (e) => {
+        if (e.target !== this.canvas) return;   // bỏ qua click vào nút UI
         if (this.state !== 'playing') return;
         if (e.button === 0) {
           if (!this.scoped) this.scoped = true;   // giữ/chuột trái: vào ống ngắm
@@ -121,6 +122,20 @@
       });
       addEventListener('keyup', (e) => { this.keys[e.code] = false; });
       addEventListener('contextmenu', (e) => e.preventDefault());
+
+      // ===== Điều khiển cảm ứng (mobile) =====
+      const cv = this.canvas;
+      cv.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const t = e.touches[0];
+        this.mouse.x = t.clientX; this.mouse.y = t.clientY;
+        this.audio.init(); this.audio.resume();
+      }, { passive: false });
+      cv.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        const t = e.touches[0];
+        this.mouse.x = t.clientX; this.mouse.y = t.clientY;
+      }, { passive: false });
     }
 
     /* ---------- Vào màn ---------- */
@@ -575,6 +590,12 @@
         }
       }, win ? 700 : 1300);
     }
+
+    /* ---------- Điều khiển cho mobile ---------- */
+    toggleScope() { if (this.state === 'playing') this.scoped = !this.scoped; }
+    fireButton() { if (this.state === 'playing') this.fire(); }
+    reloadButton() { if (this.state === 'playing') this.startReload(); }
+    setBreath(on) { this.keys['Space'] = !!on; }
 
     pause() { if (this.state === 'playing') { this.state = 'paused'; if (this.hooks.onPause) this.hooks.onPause(); } }
     resume() { if (this.state === 'paused') { this.state = 'playing'; if (this.hooks.onResume) this.hooks.onResume(); } }

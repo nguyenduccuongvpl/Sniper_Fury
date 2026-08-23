@@ -251,6 +251,18 @@
   $('btnRestart').addEventListener('click', () => { game.audio.click(); startLevel(currentLevel); });
   $('btnQuit').addEventListener('click', () => { game.audio.click(); backToMenu(); });
 
+  /* ---------- Điều khiển mobile ---------- */
+  const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+  if (isTouch) $('mobileControls').classList.remove('hidden');
+  $('mBtnScope').addEventListener('click', () => game.toggleScope());
+  $('mBtnFire').addEventListener('click', () => game.fireButton());
+  $('mBtnReload').addEventListener('click', () => game.reloadButton());
+  const breathBtn = $('mBtnBreath');
+  breathBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); game.setBreath(true); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev =>
+    breathBtn.addEventListener(ev, () => game.setBreath(false))
+  );
+
   addEventListener('pointerdown', () => { game.audio.init(); game.audio.resume(); }, { once: true });
 
   updateTotalScore();
