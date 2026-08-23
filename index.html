@@ -18,6 +18,7 @@
     <div class="hud-box" id="hudWind">Gió: —</div>
     <div class="hud-box" id="hudAmmo">🔫 5 / 15</div>
     <div class="hud-box" id="hudScore">Điểm: 0</div>
+    <div class="hud-box" id="hudWeapon">Barrett M82</div>
   </div>
   <div id="hudMessage" class="hidden"></div>
   <div id="breathBar"><div id="breathFill"></div></div>
@@ -31,6 +32,7 @@
   <div class="menu-buttons">
     <button id="btnStart" class="btn btn-primary">▶ BẮT ĐẦU</button>
     <button id="btnLevels" class="btn">🎯 CHỌN MÀN</button>
+    <button id="btnShop" class="btn">🔫 CỬA HÀNG SÚNG</button>
     <button id="btnHowTo" class="btn">❓ HƯỚNG DẪN</button>
   </div>
   <p class="total-score" id="totalScore"></p>
@@ -43,17 +45,27 @@
   <button id="btnBackMenu" class="btn">← Quay lại</button>
 </div>
 
+<!-- Cửa hàng vũ khí -->
+<div id="shopScreen" class="screen hidden">
+  <h2>🔫 CỬA HÀNG VŨ KHÍ</h2>
+  <p class="subtitle" id="shopStars"></p>
+  <div id="shopGrid"></div>
+  <button id="btnBackMenu3" class="btn">← Quay lại</button>
+</div>
+
 <!-- Hướng dẫn -->
 <div id="howtoScreen" class="screen hidden">
   <h2>HƯỚNG DẪN</h2>
   <div class="howto-content">
-    <p>🖱️ <b>Di chuột</b> — ngắm bắn qua ống ngắm</p>
-    <p>🖱️ <b>Click chuột trái</b> — bắn</p>
-    <p>⌨️ <b>R</b> — nạp đạn &nbsp;|&nbsp; <b>Space / Shift</b> — giữ hơi (ngắm ổn định)</p>
+    <p>🖱️ <b>Nhấn giữ chuột trái</b> — giương ống ngắm (zoom theo súng)</p>
+    <p>🖱️ <b>Chuột trái lần nữa</b> — bắn (đạn giảm thanh, có đường đạn bay)</p>
+    <p>🖱️ <b>Chuột phải</b> — thu hồi ống ngắm về góc nhìn thường</p>
+    <p>⌨️ <b>R</b> — nạp đạn | <b>Space / Shift</b> — giữ hơi (ngắm ổn định)</p>
     <p>⌨️ <b>Esc / P</b> — tạm dừng</p>
-    <p>💀 Bắn hết <b>quân địch</b> để qua màn. Đầu = 250 điểm, thân = 100 điểm.</p>
-    <p>⚠️ <b>TUYỆT ĐỐI</b> không bắn dân thường (áo trắng, giơ tay)!</p>
-    <p>🌬️ Chú ý <b>chỉ số gió</b> — đạn sẽ bị lệch theo hướng gió.</p>
+    <p>💀 Bắn hết <b>quân địch</b> để qua màn. Headshot = 250đ, thân = 100đ, sĩ quan = 300–500đ.</p>
+    <p>⚠️ <b>TUYỆT ĐỐI</b> không bắn dân thường (áo sáng màu)! Có cả dân đi bộ trên đường.</p>
+    <p>🌬️ Chú ý <b>gió</b> — đạn lệch theo hướng gió. Súng càng tốt càng ít bị lệch.</p>
+    <p>🔫 Mua súng mới trong <b>Cửa hàng</b> bằng số sao tích lũy được.</p>
   </div>
   <button id="btnBackMenu2" class="btn">← Quay lại</button>
 </div>

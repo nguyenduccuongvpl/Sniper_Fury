@@ -64,11 +64,17 @@
       osc.stop(ctx.currentTime + duration);
     }
 
-    shot() {
-      // Tiếng súng: nổ + vang xa
-      this._noise(0.12, 3500, 0.9);
-      this._noise(0.5, 500, 0.5);
-      this._tone(90, 0.25, 0.4, 'triangle', 40);
+    shot(suppressed) {
+      if (suppressed) {
+        // Tiếng súng có gắn giảm thanh: "xì" nhỏ, nghe xa
+        this._noise(0.07, 1400, 0.22);
+        this._tone(150, 0.09, 0.1, 'triangle', 55);
+      } else {
+        // Tiếng súng thường: nổ + vang xa
+        this._noise(0.12, 3500, 0.9);
+        this._noise(0.5, 500, 0.5);
+        this._tone(90, 0.25, 0.4, 'triangle', 40);
+      }
     }
 
     empty() { this._tone(1200, 0.06, 0.12, 'square'); }

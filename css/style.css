@@ -253,6 +253,109 @@ h2 {
   text-align: left;
 }
 
+/* ===== Cửa hàng vũ khí ===== */
+#shopGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(300px, 380px));
+  gap: 18px;
+}
+
+.weapon-card {
+  position: relative;
+  pointer-events: auto;
+  background: rgba(30, 40, 26, 0.9);
+  border: 1px solid rgba(125, 216, 79, 0.35);
+  border-radius: 12px;
+  padding: 18px 20px;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.weapon-card:hover {
+  border-color: rgba(125, 216, 79, 0.7);
+  box-shadow: 0 0 16px rgba(125, 216, 79, 0.2);
+}
+
+.weapon-card.selected {
+  border-color: #7dd84f;
+  box-shadow: 0 0 22px rgba(125, 216, 79, 0.4);
+}
+
+.weapon-card.locked {
+  opacity: 0.75;
+}
+
+.weapon-card h3 {
+  font-size: 20px;
+  color: #dfe8d5;
+  margin-bottom: 6px;
+  letter-spacing: 1px;
+}
+
+.weapon-desc {
+  font-size: 13px;
+  color: #9fb894;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #c9dcc0;
+  margin-bottom: 4px;
+}
+
+.stat-row span {
+  width: 70px;
+  flex-shrink: 0;
+}
+
+.stat-bar {
+  flex: 1;
+  height: 7px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.stat-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4d8b2f, #7dd84f);
+  border-radius: 4px;
+}
+
+.weapon-price {
+  font-size: 14px;
+  color: #ffd54f;
+  margin-top: 8px;
+}
+
+.weapon-action {
+  margin-top: 8px;
+}
+
+.btn-small {
+  padding: 8px 20px;
+  font-size: 14px;
+}
+
+.admin-badge {
+  position: absolute;
+  top: -12px;
+  right: 14px;
+  background: linear-gradient(180deg, #b8860b, #8a6508);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 3px 12px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
 /* ===== Kết quả ===== */
 .stars {
   font-size: 52px;

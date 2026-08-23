@@ -1,22 +1,36 @@
-/* ===== Sniper Fury — Điều phối UI & tiến trình ===== */
+/* ===== Sniper Fury — Điều phối UI, cửa hàng vũ khí & tiến trình ===== */
 (function () {
   'use strict';
 
   const $ = (id) => document.getElementById(id);
   const LEVELS = window.LEVELS;
+  const WEAPONS = window.WEAPONS;
 
   /* ---------- Lưu tiến trình ---------- */
-  const SAVE_KEY = 'sniper_fury_progress_v1';
+  const SAVE_KEY = 'sniper_fury_progress_v2';
   const Progress = {
-    data: { unlocked: 1, stars: {}, best: {} },
+    data: {
+      unlocked: 1,
+      stars: {}, best: {},
+      owned: ['svd'],
+      selected: 'barrett'
+    },
     load() {
       try {
         const raw = localStorage.getItem(SAVE_KEY);
         if (raw) this.data = Object.assign(this.data, JSON.parse(raw));
       } catch (e) { /* bỏ qua */ }
+      // Admin: mở khoá mọi súng, mặc định Barrett
+      if (window.ADMIN) {
+        this.data.owned = Object.keys(WEAPONS);
+        this.data.selected = this.data.selected || 'barrett';
+      }
     },
     save() {
       try { localStorage.setItem(SAVE_KEY, JSON.stringify(this.data)); } catch (e) { /* bỏ qua */ }
+    },
+    totalStars() {
+      return Object.values(this.data.stars).reduce((a, b) => a + b, 0);
     },
     unlock(idx) {
       if (idx + 1 > this.data.unlocked && idx + 1 <= LEVELS.length) {
@@ -29,6 +43,23 @@
       if (!this.data.stars[key] || this.data.stars[key] < stars) this.data.stars[key] = stars;
       if (!this.data.best[key] || this.data.best[key] < score) this.data.best[key] = score;
       this.save();
+    },
+    buyWeapon(id) {
+      const w = WEAPONS[id];
+      if (!w || this.data.owned.includes(id)) return false;
+      if (window.ADMIN || this.totalStars() >= w.price) {
+        this.data.owned.push(id);
+        this.data.selected = id;
+        this.save();
+        return true;
+      }
+      return false;
+    },
+    selectWeapon(id) {
+      if (!this.data.owned.includes(id)) return false;
+      this.data.selected = id;
+      this.save();
+      return true;
     }
   };
   Progress.load();
@@ -41,12 +72,13 @@
     onPause: () => showScreen('pauseScreen'),
     onResume: () => showScreen(null),
   });
+  game.setWeapon(Progress.data.selected);
 
   let currentLevel = 0;
   let lastResult = null;
 
   /* ---------- Quản lý màn hình ---------- */
-  const SCREENS = ['menuScreen', 'levelScreen', 'howtoScreen', 'resultScreen', 'pauseScreen'];
+  const SCREENS = ['menuScreen', 'levelScreen', 'howtoScreen', 'shopScreen', 'resultScreen', 'pauseScreen'];
   function showScreen(name) {
     SCREENS.forEach(s => $(s).classList.toggle('hidden', s !== name));
     $('hud').classList.toggle('hidden', name !== null || game.state === 'idle');
@@ -54,6 +86,7 @@
 
   function startLevel(idx) {
     currentLevel = idx;
+    game.setWeapon(Progress.data.selected);
     game.audio.init();
     game.audio.resume();
     showScreen(null);
@@ -71,8 +104,7 @@
   function windText(w) {
     if (Math.abs(w) < 0.05) return 'Gió: —';
     const dir = w > 0 ? '→' : '←';
-    const strength = Math.round(Math.abs(w) * 10);
-    return `Gió: ${dir} ${strength}`;
+    return `Gió: ${dir} ${Math.round(Math.abs(w) * 10)}`;
   }
 
   function updateHud(h) {
@@ -82,6 +114,7 @@
     $('hudWind').textContent = windText(h.wind);
     $('hudAmmo').textContent = `🔫 ${h.mag} / ${h.reserve}`;
     $('hudScore').textContent = `Điểm: ${h.score}`;
+    $('hudWeapon').textContent = h.weaponName + (h.scoped ? ' 🔍' : '');
     $('breathFill').style.width = `${Math.round(h.breath * 100)}%`;
     $('reloadBar').classList.toggle('hidden', !h.reloading);
     if (h.reloading) $('reloadFill').style.width = `${Math.round(h.reloadPct * 100)}%`;
@@ -92,7 +125,6 @@
     const el = $('hudMessage');
     el.textContent = text;
     el.classList.remove('hidden');
-    // Kích hoạt lại animation
     el.style.animation = 'none';
     void el.offsetWidth;
     el.style.animation = '';
@@ -122,9 +154,9 @@
 
   function updateTotalScore() {
     const total = Object.values(Progress.data.best).reduce((a, b) => a + b, 0);
-    const totalStars = Object.values(Progress.data.stars).reduce((a, b) => a + b, 0);
+    const stars = Progress.totalStars();
     $('totalScore').textContent =
-      total > 0 ? `Tổng điểm tốt nhất: ${total} ★ | Tổng sao: ${'★'.repeat(Math.min(totalStars, 30))}` : '';
+      total > 0 ? `Tổng điểm tốt nhất: ${total} | Tổng sao: ${stars} ★` : '';
   }
 
   /* ---------- Lưới chọn màn ---------- */
@@ -146,6 +178,59 @@
     });
   }
 
+  /* ---------- Cửa hàng vũ khí ---------- */
+  function statBar(label, value) {
+    const pct = Math.round(value * 100);
+    return `<div class="stat-row"><span>${label}</span>
+      <div class="stat-bar"><div class="stat-fill" style="width:${pct}%"></div></div></div>`;
+  }
+
+  function buildShop() {
+    const grid = $('shopGrid');
+    grid.innerHTML = '';
+    $('shopStars').textContent = `Bạn đang có ${Progress.totalStars()} ★`;
+
+    Object.values(WEAPONS).forEach(w => {
+      const owned = Progress.data.owned.includes(w.id);
+      const selected = Progress.data.selected === w.id;
+      const card = document.createElement('div');
+      card.className = 'weapon-card' + (selected ? ' selected' : '') + (owned ? '' : ' locked');
+
+      let actionHtml;
+      if (selected) actionHtml = `<button class="btn btn-small" disabled>✓ ĐANG DÙNG</button>`;
+      else if (owned) actionHtml = `<button class="btn btn-small btn-primary" data-act="select" data-id="${w.id}">CHỌN</button>`;
+      else actionHtml = `<button class="btn btn-small btn-primary" data-act="buy" data-id="${w.id}">
+          MUA — ${w.price} ★</button>`;
+
+      card.innerHTML = `
+        ${window.ADMIN && w.adminOnly ? '<div class="admin-badge">👑 ADMIN</div>' : ''}
+        <h3>${w.name}</h3>
+        <p class="weapon-desc">${w.desc}</p>
+        ${statBar('Zoom', Math.min(1, w.zoom / 6))}
+        ${statBar('Ổn định', 1 - (w.sway - 0.4) / 1.2)}
+        ${statBar('Chống gió', 1 - (w.windMul - 0.4) / 1.1)}
+        ${statBar('Băng đạn', w.mag / 10)}
+        <p class="weapon-price">${owned ? 'Đã sở hữu' : `Giá: ${w.price} ★`}</p>
+        <div class="weapon-action">${actionHtml}</div>
+      `;
+      grid.appendChild(card);
+    });
+
+    grid.querySelectorAll('button[data-act]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        game.audio.click();
+        const id = btn.dataset.id;
+        if (btn.dataset.act === 'buy') {
+          if (Progress.buyWeapon(id)) showMsg('Đã mua ' + WEAPONS[id].name + '!', 1500);
+        } else {
+          Progress.selectWeapon(id);
+        }
+        game.setWeapon(Progress.data.selected);
+        buildShop();
+      });
+    });
+  }
+
   /* ---------- Gắn sự kiện nút ---------- */
   $('btnStart').addEventListener('click', () => {
     game.audio.init(); game.audio.resume(); game.audio.click();
@@ -153,8 +238,10 @@
   });
   $('btnLevels').addEventListener('click', () => { game.audio.click(); buildLevelGrid(); showScreen('levelScreen'); });
   $('btnHowTo').addEventListener('click', () => { game.audio.click(); showScreen('howtoScreen'); });
+  $('btnShop').addEventListener('click', () => { game.audio.click(); buildShop(); showScreen('shopScreen'); });
   $('btnBackMenu').addEventListener('click', () => { game.audio.click(); backToMenu(); });
   $('btnBackMenu2').addEventListener('click', () => { game.audio.click(); backToMenu(); });
+  $('btnBackMenu3').addEventListener('click', () => { game.audio.click(); backToMenu(); });
 
   $('btnRetry').addEventListener('click', () => { game.audio.click(); startLevel(lastResult.levelIndex); });
   $('btnNext').addEventListener('click', () => { game.audio.click(); startLevel(lastResult.levelIndex + 1); });
@@ -164,7 +251,6 @@
   $('btnRestart').addEventListener('click', () => { game.audio.click(); startLevel(currentLevel); });
   $('btnQuit').addEventListener('click', () => { game.audio.click(); backToMenu(); });
 
-  // Mở khoá âm thanh khi người dùng tương tác lần đầu
   addEventListener('pointerdown', () => { game.audio.init(); game.audio.resume(); }, { once: true });
 
   updateTotalScore();
