@@ -460,7 +460,6 @@
 
       const sway = this.currentSway(this.holdingBreath());
       const windOff = this.level.wind * C.WIND_OFFSET * this.weapon.windMul;
-      // Điểm bắn = TÂM MÀN HÌNH trong thế giới — khớp 100% với tâm chữ thập
       // Điểm bắn = đúng điểm thế giới dưới con trỏ/ngón tay
       const ax = this.px;
       const ay = this.py;
@@ -837,8 +836,6 @@
 
       ctx.save();
       if (this.scoped) {
-        // Chế độ ống ngắm: phóng đại quanh TÂM MÀN HÌNH
-        // => mục tiêu dưới tâm chữ thập giữ nguyên vị trí khi bật/tắt zoom
         // Zoom quanh DUNG diem con tro dang chi
         // => muc tieu duoi tam ngam KHONG BAO GIO dich khi bat/tat zoom
         ctx.translate(this.mouse.x + shX, this.mouse.y + shY);
@@ -1459,108 +1456,275 @@
       this.drawGun(ctx);
     }
 
-    /* ---------- Vẽ khẩu súng góc nhìn thứ nhất ---------- */
+    /* ================= SÚNG GÓC NHÌN THỨ NHẤT (phong cách Đột Kích) ================= */
     drawGun(ctx) {
       const w = this.weapon;
-      const vw = this.viewW, vh = this.viewH;
       const kick = this.recoil;
+      const sway = this.currentSway(false);
+
+      // Súng nằm góc phải-dưới, nòng chĩa về phía tâm ngắm
+      const gx = this.viewW * 0.88, gy = this.viewH * 1.06;
+      const tx = this.viewW * 0.40, ty = this.viewH * 0.55;
+      const ang = Math.atan2(ty - gy, tx - gx);
+      const s = clamp(Math.min(this.viewW, this.viewH) / 850, 0.75, 1.25);
 
       ctx.save();
-      // Neo góc phải-dưới, hướng về tâm màn hình
-      ctx.translate(vw + 30, vh + 60 - kick * 34);
-      ctx.rotate(-0.42 + kick * 0.05);
+      ctx.translate(gx - sway.x * 0.5, gy - sway.y * 0.5 - kick * 30);
+      ctx.rotate(ang + kick * 0.035);
+      ctx.scale(s, s);
 
-      const metal = w.metal, wood = w.color;
+      /* ----- Bảng màu theo từng khẩu súng VIP ----- */
+      let metal, metalHi, body, bodyHi, bodyDk, gripC, scopeC;
+      if (w.id === 'awm') {           // AWM — thân xanh quân đội
+        metal = '#2c3034'; metalHi = '#4d545b';
+        body = '#44543a'; bodyHi = '#5f7449'; bodyDk = '#31402a';
+        gripC = '#2a3324'; scopeC = '#191c1f';
+      } else if (w.id === 'm200') {   // CheyTac M200 — màu đất sa mạc
+        metal = '#26292c'; metalHi = '#474c51';
+        body = '#8a7a58'; bodyHi = '#a5946c'; bodyDk = '#6d6046';
+        gripC = '#5c5138'; scopeC = '#17191b';
+      } else if (w.id === 'svd') {    // SVD Dragunov — gỗ cổ điển
+        metal = '#232527'; metalHi = '#41454a';
+        body = '#7c4a24'; bodyHi = '#98622f'; bodyDk = '#5e3819';
+        gripC = '#4a2c12'; scopeC = '#141618';
+      } else {                        // Barrett M82 — đen công nghiệp
+        metal = '#2e3236'; metalHi = '#51575e';
+        body = '#22262a'; bodyHi = '#3c434a'; bodyDk = '#15171a';
+        gripC = '#1c1f22'; scopeC = '#101214';
+      }
+
       const big = w.id === 'barrett';
+      const barrelLen = w.id === 'm200' ? 540 : w.id === 'awm' ? 450 : big ? 520 : 420;
+      const bw = big ? 13 : 9;   // bán kính nòng
 
-      // Báng súng (phía sau, ngoài màn hình một phần)
-      ctx.fillStyle = w.id === 'svd' ? wood : metal;
-      ctx.fillRect(-330, -46, 190, 52);
-      ctx.beginPath();
-      ctx.moveTo(-330, -46); ctx.lineTo(-360, -20); ctx.lineTo(-360, 6); ctx.lineTo(-330, 6);
-      ctx.closePath(); ctx.fill();
-
-      // Thân súng (receiver)
-      ctx.fillStyle = metal;
-      ctx.fillRect(-160, -52, 190, 46);
-
-      // Nòng súng
-      ctx.fillStyle = metal;
-      const barrelLen = w.id === 'm200' ? 420 : w.id === 'awm' ? 350 : big ? 380 : 330;
-      ctx.fillRect(-160, -44, barrelLen, big ? 16 : 11);
-
-      // Giảm thanh (suppressor) — mọi súng đều gắn
-      ctx.fillStyle = '#1c1f22';
-      const supLen = big ? 130 : 105;
-      ctx.fillRect(-160 + barrelLen, big ? -50 : -48, supLen, big ? 28 : 21);
-      // Khắc vòng giảm thanh
-      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-      ctx.lineWidth = 1.5;
-      for (let i = 1; i < 5; i++) {
-        const gx = -160 + barrelLen + (supLen / 5) * i;
-        ctx.beginPath();
-        ctx.moveTo(gx, big ? -50 : -48); ctx.lineTo(gx, big ? -22 : -27);
-        ctx.stroke();
-      }
-
-      // Đầu ruồi
-      ctx.fillStyle = '#141618';
-      ctx.fillRect(-160 + barrelLen * 0.55, big ? -58 : -54, 6, 12);
-
-      // Ống ngắm
-      ctx.fillStyle = '#101214';
-      ctx.fillRect(-120, -74, 170, 20);
-      ctx.fillStyle = '#1e2226';
-      ctx.fillRect(-128, -78, 16, 28);
-      ctx.fillRect(34, -78, 16, 28);
-
-      // Băng đạn
-      ctx.fillStyle = metal;
-      if (w.id === 'svd') {
-        // Băng cong
-        ctx.beginPath();
-        ctx.moveTo(-60, -8);
-        ctx.quadraticCurveTo(-52, 40, -84, 62);
-        ctx.lineTo(-116, 52);
-        ctx.quadraticCurveTo(-96, 26, -92, -8);
-        ctx.closePath(); ctx.fill();
-      } else {
-        const mw = big ? 40 : 30, mh = big ? 62 : 48;
-        ctx.fillRect(big ? -70 : -62, -8, mw, mh);
-      }
-
-      // Báng súng gỗ SVD
-      if (w.id === 'svd') {
-        ctx.fillStyle = wood;
-        ctx.fillRect(-250, -50, 100, 40);
-      }
-      // Chân chống (bipod) Barrett/AWM
+      /* --- Chân chống (bipod) gập dưới nòng --- */
       if (big || w.id === 'awm') {
-        ctx.strokeStyle = '#1a1d20';
-        ctx.lineWidth = 5;
+        ctx.strokeStyle = '#181b1e';
+        ctx.lineWidth = 7;
+        ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.moveTo(-160 + barrelLen * 0.35, -30);
-        ctx.lineTo(-160 + barrelLen * 0.35 - 26, 26);
-        ctx.moveTo(-160 + barrelLen * 0.35, -30);
-        ctx.lineTo(-160 + barrelLen * 0.35 + 10, 30);
+        ctx.moveTo(barrelLen * 0.60, 12);
+        ctx.lineTo(barrelLen * 0.50, 78);
+        ctx.moveTo(barrelLen * 0.60, 12);
+        ctx.lineTo(barrelLen * 0.72, 74);
         ctx.stroke();
       }
 
-      // Chớp sáng đầu nòng (nhỏ vì giảm thanh)
-      if (kick > 0.75) {
-        ctx.fillStyle = `rgba(255,230,150,${(kick - 0.75) * 1.2})`;
-        const mx = -160 + barrelLen + supLen;
+      /* --- Báng súng --- */
+      const stkG = ctx.createLinearGradient(0, -30, 0, 60);
+      stkG.addColorStop(0, bodyHi);
+      stkG.addColorStop(0.55, body);
+      stkG.addColorStop(1, bodyDk);
+      ctx.fillStyle = stkG;
+      ctx.beginPath();
+      ctx.moveTo(-72, -20);
+      ctx.quadraticCurveTo(-88, 8, -78, 44);
+      ctx.lineTo(-42, 58);
+      ctx.lineTo(98, 50);
+      ctx.lineTo(106, -24);
+      ctx.closePath();
+      ctx.fill();
+      // Đệm vai cao su
+      ctx.fillStyle = 'rgba(8,9,11,0.9)';
+      ctx.fillRect(-80, -18, 13, 66);
+      // Đỡ má (cheek rest)
+      ctx.fillStyle = bodyDk;
+      ctx.fillRect(6, -36, 74, 18);
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      ctx.fillRect(6, -36, 74, 4);
+
+      /* --- Thân súng (receiver) --- */
+      const rcvG = ctx.createLinearGradient(0, -38, 0, 40);
+      rcvG.addColorStop(0, metalHi);
+      rcvG.addColorStop(0.45, metal);
+      rcvG.addColorStop(1, '#121416');
+      ctx.fillStyle = rcvG;
+      ctx.fillRect(92, -38, 252, 78);
+      // Khấc trang trí trên thân
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 4; i++) {
         ctx.beginPath();
-        ctx.arc(mx, big ? -36 : -38, 10, 0, TAU);
+        ctx.moveTo(116 + i * 56, -32);
+        ctx.lineTo(116 + i * 56, 34);
+        ctx.stroke();
+      }
+      // Ray gắn đồ (picatinny rail)
+      ctx.fillStyle = '#101214';
+      ctx.fillRect(120, -44, 210, 8);
+      ctx.fillStyle = 'rgba(255,255,255,0.10)';
+      for (let i = 0; i < 12; i++) ctx.fillRect(124 + i * 17, -44, 8, 3);
+
+      /* --- Báng cầm (pistol grip) --- */
+      ctx.fillStyle = gripC;
+      ctx.beginPath();
+      ctx.moveTo(148, 34);
+      ctx.lineTo(198, 34);
+      ctx.lineTo(180, 112);
+      ctx.lineTo(136, 106);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.moveTo(146 + i * 2, 48 + i * 15);
+        ctx.lineTo(192 - i * 2, 46 + i * 15);
+        ctx.stroke();
+      }
+
+      /* --- Cò súng & vành bảo vệ --- */
+      ctx.strokeStyle = metal;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(232, 48, 27, 0.1 * Math.PI, 0.95 * Math.PI);
+      ctx.stroke();
+      ctx.fillStyle = '#c9a24a';
+      ctx.beginPath();
+      ctx.moveTo(226, 28);
+      ctx.quadraticCurveTo(219, 46, 227, 58);
+      ctx.lineTo(236, 53);
+      ctx.quadraticCurveTo(231, 40, 235, 30);
+      ctx.closePath();
+      ctx.fill();
+
+      /* --- Băng đạn --- */
+      ctx.fillStyle = metal;
+      if (w.id === 'svd') {
+        // Băng cong đặc trưng SVD
+        ctx.beginPath();
+        ctx.moveTo(286, 36);
+        ctx.quadraticCurveTo(298, 82, 266, 118);
+        ctx.lineTo(228, 104);
+        ctx.quadraticCurveTo(252, 70, 256, 36);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        const mw = big ? 48 : 36, mh = big ? 78 : 58;
+        ctx.fillRect(272, 36, mw, mh);
+        ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(272, 36, mw, mh);
+        ctx.fillStyle = 'rgba(255,255,255,0.07)';
+        ctx.fillRect(272, 36, mw, 6);
+      }
+
+      /* --- Nòng súng --- */
+      const brlG = ctx.createLinearGradient(0, -bw, 0, bw);
+      brlG.addColorStop(0, metalHi);
+      brlG.addColorStop(0.5, metal);
+      brlG.addColorStop(1, '#0e1012');
+      ctx.fillStyle = brlG;
+      ctx.fillRect(336, -bw, barrelLen - 336, bw * 2);
+      // Đầu ruồi
+      ctx.fillStyle = '#0c0e10';
+      ctx.fillRect(barrelLen * 0.55, -bw - 9, 7, 11);
+
+      /* --- Giảm thanh (suppressor) --- */
+      const supLen = big ? 155 : 118;
+      const syT = -(bw + (big ? 5 : 3));
+      const shH = big ? 28 : 20;
+      const supG = ctx.createLinearGradient(0, syT, 0, syT + shH);
+      supG.addColorStop(0, '#3d434a');
+      supG.addColorStop(0.5, '#1b1e21');
+      supG.addColorStop(1, '#0a0c0e');
+      ctx.fillStyle = supG;
+      ctx.fillRect(barrelLen, syT, supLen, shH);
+      ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+      ctx.lineWidth = 1.5;
+      for (let i = 1; i <= 5; i++) {
+        const lx = barrelLen + (supLen / 6) * i;
+        ctx.beginPath();
+        ctx.moveTo(lx, syT);
+        ctx.lineTo(lx, syT + shH);
+        ctx.stroke();
+      }
+
+      /* --- Ống ngắm tâm điểm --- */
+      // Chân đỡ ống ngắm
+      ctx.fillStyle = '#131518';
+      ctx.fillRect(186, -52, 18, 12);
+      ctx.fillRect(322, -52, 18, 12);
+      // Thân ống ngắm
+      const scpG = ctx.createLinearGradient(0, -84, 0, -50);
+      scpG.addColorStop(0, '#41474e');
+      scpG.addColorStop(0.4, scopeC);
+      scpG.addColorStop(1, '#08090b');
+      ctx.fillStyle = scpG;
+      ctx.fillRect(176, -84, 196, 32);
+      // Chuông kính trước
+      ctx.beginPath();
+      ctx.ellipse(384, -68, 27, 22, 0, 0, TAU);
+      ctx.fill();
+      // Mắt kính sau
+      ctx.beginPath();
+      ctx.ellipse(164, -68, 15, 18, 0, 0, TAU);
+      ctx.fill();
+      // Kính xanh phản chiếu ánh sáng
+      const lensG = ctx.createRadialGradient(386, -70, 2, 386, -70, 20);
+      lensG.addColorStop(0, 'rgba(150,205,255,0.95)');
+      lensG.addColorStop(0.55, 'rgba(80,130,220,0.45)');
+      lensG.addColorStop(1, 'rgba(25,45,85,0.1)');
+      ctx.fillStyle = lensG;
+      ctx.beginPath();
+      ctx.ellipse(386, -69, 21, 16, 0, 0, TAU);
+      ctx.fill();
+      // Núm chỉnh độ cao
+      ctx.fillStyle = '#22262c';
+      ctx.fillRect(246, -97, 36, 15);
+      ctx.beginPath();
+      ctx.arc(264, -97, 9, Math.PI, 0);
+      ctx.fill();
+
+      /* --- Tay người cầm (găng chiến thuật) --- */
+      this.drawGlove(ctx, 168, 58, 0.75);    // tay phải ôm báng cầm
+      this.drawGlove(ctx, 452, 4, 1.05);     // tay trái đỡ nòng
+
+      /* --- Chớp sáng đầu nòng --- */
+      if (kick > 0.8) {
+        ctx.fillStyle = `rgba(255,232,160,${(kick - 0.8) * 2.2})`;
+        ctx.beginPath();
+        ctx.arc(barrelLen + supLen + 10, 0, 15, 0, TAU);
         ctx.fill();
       }
 
-      // Tay che (gợi ý người cầm)
-      ctx.fillStyle = 'rgba(30,26,22,0.9)';
-      ctx.beginPath();
-      ctx.ellipse(-40, 6, 46, 30, 0.3, 0, TAU);
-      ctx.fill();
+      ctx.restore();
+    }
 
+    /* Găng tay + cánh tay người cầm súng */
+    drawGlove(ctx, x, y, armAng) {
+      ctx.save();
+      ctx.translate(x, y);
+      // Cánh tay + tay áo quân đội
+      ctx.save();
+      ctx.rotate(armAng);
+      ctx.fillStyle = '#39442c';
+      ctx.beginPath();
+      ctx.moveTo(16, -20);
+      ctx.quadraticCurveTo(110, -6, 168, 66);
+      ctx.lineTo(96, 108);
+      ctx.quadraticCurveTo(48, 40, 8, 22);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      // Găng tay
+      ctx.fillStyle = '#262119';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 36, 25, 0, 0, TAU);
+      ctx.fill();
+      // Ngón tay quấn quanh súng
+      ctx.fillStyle = '#312a1f';
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.ellipse(-4, -16 + i * 11, 24, 8.5, 0, 0, TAU);
+        ctx.fill();
+      }
+      // Viền sáng nhẹ
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 36, 25, 0, 0, TAU);
+      ctx.stroke();
       ctx.restore();
     }
   }
