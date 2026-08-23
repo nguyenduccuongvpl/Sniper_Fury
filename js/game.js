@@ -302,7 +302,7 @@
 
       const spots = [];
       for (const b of this.buildings) {
-        spots.push({ type: 'roof', x: b.x + 50 + rng() * (b.w - 100), y: b.y });
+        spots.push({ type: 'roof', x: b.x + 50 + rng() * (b.w - 100), y: b.y, b });
         if (rng() > 0.45) spots.push({ type: 'window', x: b.x + b.w / 2, y: b.y + 66 + rng() * (b.h - 140) });
       }
       for (let i = 0; i < 20; i++) {
@@ -353,8 +353,18 @@
             a.y = C.GROUND_Y;
           } else if (spot.type !== 'window' && L.speed > 0) {
             const range = a.runner ? 260 + rng() * 220 : 110 + rng() * 130;
-            a.minX = clamp(a.x - range, 70, C.WORLD_W - 70);
-            a.maxX = clamp(a.x + range, 70, C.WORLD_W - 70);
+            if (spot.type === 'roof') {
+              // Tuần tra CHỈ trong phạm vi nóc nhà — không đi lơ lửng ngoài không khí
+              const lo = spot.b.x + 25, hi = spot.b.x + spot.b.w - 25;
+              a.onRoof = true;
+              a.roofLo = lo; a.roofHi = hi;
+              a.minX = clamp(a.x - range, lo, hi);
+              a.maxX = clamp(a.x + range, lo, hi);
+              if (a.maxX - a.minX < 50) { a.minX = a.maxX = a.x; }
+            } else {
+              a.minX = clamp(a.x - range, 70, C.WORLD_W - 70);
+              a.maxX = clamp(a.x + range, 70, C.WORLD_W - 70);
+            }
           } else {
             a.minX = a.maxX = a.x;
           }
@@ -366,6 +376,13 @@
         }
 
         this.actors.push(a);
+      }
+
+      // Ghép cặp đồng đội: đi cùng nhau, 1 người bị hạ thì người kia cảnh giác
+      const movers = this.actors.filter(a => a.kind === 'enemy' && !a.peek && a.maxX > a.minX);
+      for (let i = 0; i + 1 < movers.length; i += 2) {
+        movers[i].buddyId = movers[i + 1].id;
+        movers[i + 1].buddyId = movers[i].id;
       }
     }
 
@@ -387,6 +404,29 @@
 
     holdingBreath() {
       return (this.keys['Space'] || this.keys['ShiftLeft'] || this.keys['ShiftRight']) && this.breath > 0;
+    }
+
+    /* ---------- Cảnh giác (đồng đội bị hạ / đạn sượt qua) ---------- */
+    alertActor(a) {
+      if (a.kind !== 'enemy' || !a.alive || a.alert || a.peek) return;
+      a.alert = true;
+      a.alertTimer = 16 + Math.random() * 8;
+      a.alertMark = 1.8;
+      if (a.staticY || a.onRoof) {
+        // Nấp ngay tại chỗ (trong cửa sổ / trên nóc) rồi thò đầu quan sát
+        a.state = 'hide';
+        a.hideUp = false;
+        a.hideTimer = 0.6 + Math.random();
+      } else {
+        // Chạy nhanh tới công sự bao cát gần nhất
+        let best = null, bd = Infinity;
+        for (const cv of this.covers) {
+          const d = Math.abs(cv.x + cv.w / 2 - a.x);
+          if (d < bd) { bd = d; best = cv; }
+        }
+        a.hideTarget = best ? best.x + best.w / 2 : a.x;
+        a.state = 'seek';
+      }
     }
 
     /* ---------- Bắn ---------- */
@@ -411,10 +451,19 @@
       for (const a of this.actors) {
         if (!a.alive || !a.spawned) continue;
         if (a.peek && !a.peek.up) continue;
+        if (a.state === 'hide' && !a.hideUp) continue;
         const headCY = a.y - (a.kind === 'civilian' ? 86 : 84);
         const dxh = ix - a.x, dyh = iy - headCY;
         if (dxh * dxh + dyh * dyh <= C.HEAD_R * C.HEAD_R) { result = { targetId: a.id, head: true }; break; }
         if (Math.abs(ix - a.x) <= C.BODY_W / 2 && iy >= a.y - C.BODY_H && iy <= a.y) { result = { targetId: a.id, head: false }; break; }
+      }
+
+      // Đạn sượt qua gần -> lính trở nên cực kỳ cảnh giác, tìm chỗ trốn
+      for (const a of this.actors) {
+        if (a.kind !== 'enemy' || !a.alive || !a.spawned) continue;
+        if (result && result.targetId === a.id) continue;
+        const dx = ix - a.x, dy = iy - (a.y - 45);
+        if (dx * dx + dy * dy < 140 * 140) this.alertActor(a);
       }
 
       // Đường đạn bay từ nòng súng đến điểm chạm
@@ -463,6 +512,11 @@
 
       target.alive = false;
       this.kills++;
+      // Đồng đội bị hạ -> người còn lại lập tức cảnh giác
+      if (target.buddyId != null) {
+        const buddy = this.actors.find(x => x.id === target.buddyId);
+        if (buddy && buddy.alive) this.alertActor(buddy);
+      }
       let pts;
       if (target.officer) pts = b.result.head ? C.OFFICER_HEAD : C.OFFICER_BODY;
       else pts = b.result.head ? C.SCORE_HEAD : C.SCORE_BODY;
@@ -585,10 +639,48 @@
         a.fade = Math.min(1, a.fade + dt * 3);
         a.phase += dt;
 
+        if (a.alertMark > 0) a.alertMark = Math.max(0, a.alertMark - dt);
+
+        if (a.alert) {
+          a.alertTimer -= dt;
+          if (a.alertTimer <= 0) {
+            // Hết cảnh giác — trở lại tuần tra bình thường
+            a.alert = false; a.state = null; a.hideTarget = null;
+            if (a.staticY) { a.minX = a.maxX = a.x; }
+            else if (a.onRoof) {
+              const lo = a.roofLo != null ? a.roofLo : a.x - 120;
+              const hi = a.roofHi != null ? a.roofHi : a.x + 120;
+              a.minX = clamp(a.x - 120, lo, hi);
+              a.maxX = clamp(a.x + 120, lo, hi);
+              if (a.maxX - a.minX < 50) { a.minX = a.maxX = a.x; }
+            } else {
+              a.minX = clamp(a.x - 140, 70, C.WORLD_W - 70);
+              a.maxX = clamp(a.x + 140, 70, C.WORLD_W - 70);
+            }
+          }
+        }
+
         if (a.peek) {
           a.peek.timer -= dt;
           if (a.peek.up && a.peek.timer <= 0) { a.peek.up = false; a.peek.timer = 1.0 + Math.random() * 1.4; }
           else if (!a.peek.up && a.peek.timer <= 0) { a.peek.up = true; a.peek.timer = 1.2 + Math.random() * 1.2; }
+        } else if (a.state === 'seek' && a.hideTarget != null) {
+          // Chạy nhanh về chỗ trốn
+          const d = a.hideTarget - a.x;
+          const spd = (a.runner ? L.speed * 2.2 : L.speed) * 2.2 + 80;
+          a.dir = d >= 0 ? 1 : -1;
+          a.x += a.dir * spd * dt;
+          if (Math.abs(a.hideTarget - a.x) < 10) {
+            a.x = a.hideTarget;
+            a.state = 'hide';
+            a.hideUp = false;
+            a.hideTimer = 0.5 + Math.random();
+          }
+        } else if (a.state === 'hide') {
+          // Nấp sau công sự, thỉnh thoảng thò đầu quan sát
+          a.hideTimer -= dt;
+          if (a.hideUp && a.hideTimer <= 0) { a.hideUp = false; a.hideTimer = 1.0 + Math.random() * 1.6; }
+          else if (!a.hideUp && a.hideTimer <= 0) { a.hideUp = true; a.hideTimer = 1.1 + Math.random() * 1.1; }
         } else if (a.maxX > a.minX) {
           const spd = a.runner ? L.speed * 2.2 : (a.kind === 'civilian' ? L.speed * 0.5 + 18 : L.speed);
           a.x += a.dir * spd * dt;
@@ -994,7 +1086,8 @@
     drawActors(ctx) {
       for (const a of this.actors) {
         if (!a.alive || !a.spawned || a.fade <= 0) continue;
-        const hidden = a.peek && !a.peek.up;
+        const hiding = a.state === 'hide';
+        const hidden = (a.peek && !a.peek.up) || (hiding && !a.hideUp);
         if (hidden) continue;
 
         ctx.save();
@@ -1004,7 +1097,16 @@
         const fx = a.x, fy = a.y - bob;
 
         if (a.kind === 'civilian') this.drawCivilian(ctx, a, fx, fy, moving);
+        else if (hiding) this.drawSoldierCrouch(ctx, a, fx, fy);
         else this.drawSoldier(ctx, a, fx, fy, moving);
+
+        // Dấu chấm than khi cảnh giác
+        if (a.alertMark > 0) {
+          ctx.fillStyle = '#ff5252';
+          ctx.font = 'bold 30px "Segoe UI", Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText('!', fx, fy - 112);
+        }
         ctx.restore();
       }
     }
@@ -1061,6 +1163,23 @@
         ctx.fillStyle = '#c62828';
         ctx.fillRect(fx - 14, fy - 66, 5, 10);
       }
+    }
+
+    drawSoldierCrouch(ctx, a, fx, fy) {
+      // Ngồi nấp sau công sự, chỉ lộ đầu & vai khi thò ra quan sát
+      ctx.fillStyle = a.officer ? '#3a3226' : '#2b3026';
+      ctx.fillRect(fx - 13, fy - 46, 26, 30);
+      ctx.fillStyle = a.skin;
+      ctx.beginPath(); ctx.arc(fx, fy - 56, 11, 0, TAU); ctx.fill();
+      ctx.fillStyle = a.officer ? '#2a2418' : '#23281f';
+      ctx.beginPath(); ctx.arc(fx, fy - 58, 12, Math.PI, 0); ctx.fill();
+      ctx.fillRect(fx - 13, fy - 60, 26, 4);
+      // Súng chĩa lên khi thò đầu
+      ctx.strokeStyle = '#15171a';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(fx - 4, fy - 40); ctx.lineTo(fx + 26 * a.dir, fy - 48);
+      ctx.stroke();
     }
 
     drawCivilian(ctx, a, fx, fy, moving) {
