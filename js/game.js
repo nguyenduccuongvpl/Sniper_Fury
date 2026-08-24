@@ -1473,7 +1473,7 @@
       ctx.rotate(ang + kick * 0.035);
       ctx.scale(s, s);
 
-      // M200 có ngoại hình đặc biệt riêng (skin "Tiên Tử")
+      // M200 có ngoại hình đặc biệt riêng (skin "Hồng Ngoại Kabuki")
       if (w.id === 'm200') {
         this.drawGunM200Body(ctx);
         ctx.restore();
@@ -1734,16 +1734,53 @@
       ctx.stroke();
       ctx.restore();
     }
-    /* ===== M200 "TIÊN TỬ" — skin phong cách Đột Kích ===== */
+    /* ===== M200 "HỒNG NGOẠI KABUKI" — vẽ lại theo thiết kế CrossFire ===== */
     drawGunM200Body(ctx) {
       const kick = this.recoil;
+      const GOLD = '#e8c56a', GOLD_HI = '#f5dfa0', GOLD_DK = '#b8934a';
+      let g;
 
-      /* --- Dải lụa bay phía sau báng --- */
+      /* Hoa anh đào 5 cánh */
+      const sakura = (x, y, r, rot) => {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rot);
+        for (let i = 0; i < 5; i++) {
+          ctx.rotate(TAU / 5);
+          ctx.fillStyle = i % 2 ? '#ffb7d5' : '#ff9cc8';
+          ctx.beginPath();
+          ctx.ellipse(r * 0.55, 0, r * 0.55, r * 0.34, 0, 0, TAU);
+          ctx.fill();
+        }
+        ctx.fillStyle = '#ffd54f';
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.22, 0, TAU);
+        ctx.fill();
+        ctx.restore();
+      };
+
+      /* Cuộn vàng kim trang trí (filigree) */
+      const curl = (x, y, r, dir) => {
+        ctx.strokeStyle = 'rgba(232,197,106,0.8)';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        for (let a = 0; a <= Math.PI * 1.75; a += 0.25) {
+          const rr = r * (1 - a / (Math.PI * 2));
+          const px = x + Math.cos(a * dir) * rr;
+          const py = y + Math.sin(a * dir) * rr;
+          if (a === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+      };
+
+      /* --- 1. Dải lụa iridescent bay phía sau báng --- */
       ctx.lineCap = 'round';
       const ribbons = [
-        { w: 16, c: 'rgba(240,160,208,0.45)', p: [[-50, 0], [-150, -30], [-260, 10], [-360, -18]] },
-        { w: 9, c: 'rgba(232,197,106,0.5)', p: [[-40, 22], [-140, 44], [-250, 26], [-350, 52]] },
-        { w: 6, c: 'rgba(176,244,255,0.35)', p: [[-46, -12], [-160, -52], [-270, -30], [-380, -60]] }
+        { w: 15, c: 'rgba(240,160,208,0.5)',  p: [[-46, -4], [-150, -34], [-262, 8], [-368, -22]] },
+        { w: 9,  c: 'rgba(232,197,106,0.55)', p: [[-38, 20], [-142, 46], [-252, 24], [-352, 54]] },
+        { w: 6,  c: 'rgba(174,230,255,0.5)',  p: [[-42, -14], [-158, -56], [-272, -34], [-384, -64]] },
+        { w: 5,  c: 'rgba(217,184,255,0.5)',  p: [[-30, 34], [-120, 66], [-230, 52], [-320, 78]] }
       ];
       for (const rb of ribbons) {
         ctx.strokeStyle = rb.c;
@@ -1754,294 +1791,492 @@
         ctx.stroke();
       }
 
-      /* --- Báng súng dạng cánh tiên --- */
-      let g = ctx.createLinearGradient(0, -30, 0, 60);
-      g.addColorStop(0, '#e87ec2');
-      g.addColorStop(0.5, '#b03a86');
-      g.addColorStop(1, '#5a1a48');
+      /* --- 2. Chân chống bipod xanh mint "chân vũ công" --- */
+      const leg = (endX, endY, kneeX, kneeY) => {
+        ctx.strokeStyle = '#8fdcc2';
+        ctx.lineWidth = 9;
+        ctx.beginPath();
+        ctx.moveTo(468, 8);
+        ctx.quadraticCurveTo(kneeX, kneeY, endX, endY);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(58,138,112,0.5)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(470, 10);
+        ctx.quadraticCurveTo(kneeX, kneeY + 3, endX + 2, endY + 2);
+        ctx.stroke();
+        ctx.fillStyle = GOLD;
+        ctx.beginPath(); ctx.arc(468, 8, 7, 0, TAU); ctx.fill();
+        ctx.fillStyle = GOLD_HI;
+        ctx.beginPath(); ctx.arc(endX, endY, 5, 0, TAU); ctx.fill();
+      };
+      leg(386, 128, 400, 76);
+      leg(548, 122, 522, 68);
+
+      /* --- 3. Báng súng thumbhole ngọc trai hồng --- */
+      g = ctx.createLinearGradient(0, -34, 0, 62);
+      g.addColorStop(0, '#ffd9ef');
+      g.addColorStop(0.45, '#f0a0d0');
+      g.addColorStop(1, '#a04a84');
       ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.moveTo(-70, -18);
-      ctx.quadraticCurveTo(-92, 6, -80, 42);
-      ctx.quadraticCurveTo(-40, 66, 20, 54);
-      ctx.lineTo(104, 44);
-      ctx.quadraticCurveTo(116, 8, 108, -26);
+      ctx.moveTo(-84, -14);
+      ctx.quadraticCurveTo(-100, 12, -88, 40);
+      ctx.quadraticCurveTo(-60, 58, -16, 52);
+      ctx.lineTo(30, 46);
+      ctx.quadraticCurveTo(70, 40, 96, 22);
+      ctx.lineTo(108, -22);
+      ctx.quadraticCurveTo(40, -34, -84, -14);
       ctx.closePath();
       ctx.fill();
-      // Viền vàng kim
-      ctx.strokeStyle = '#e8c56a';
-      ctx.lineWidth = 3;
+      ctx.strokeStyle = GOLD;
+      ctx.lineWidth = 2.5;
       ctx.stroke();
-      // Lỗ khoét cánh tiên
-      ctx.fillStyle = 'rgba(40,8,32,0.75)';
+      // Lỗ thumbhole đặc trưng M200
+      ctx.fillStyle = 'rgba(58,10,46,0.8)';
       ctx.beginPath();
-      ctx.ellipse(30, 12, 34, 14, -0.15, 0, TAU);
+      ctx.ellipse(52, 18, 20, 12, -0.2, 0, TAU);
       ctx.fill();
-      ctx.strokeStyle = 'rgba(232,197,106,0.8)';
+      ctx.strokeStyle = GOLD_HI;
       ctx.lineWidth = 2;
       ctx.stroke();
+      // Đệm vai
+      ctx.fillStyle = 'rgba(90,26,72,0.9)';
+      ctx.fillRect(-92, -16, 12, 58);
+      ctx.strokeStyle = GOLD;
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-92, -16, 12, 58);
+      // Đỡ má (cheek riser)
+      g = ctx.createLinearGradient(0, -46, 0, -26);
+      g.addColorStop(0, '#e88ac2');
+      g.addColorStop(1, '#b04a8c');
+      ctx.fillStyle = g;
+      ctx.fillRect(-30, -44, 84, 18);
+      ctx.strokeStyle = GOLD;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(-30, -44, 84, 18);
+      /* --- 4. Cành anh đào vươn từ sống báng --- */
+      ctx.strokeStyle = '#7a4a38';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(66, -48);
+      ctx.quadraticCurveTo(20, -84, -40, -104);
+      ctx.moveTo(20, -76);
+      ctx.quadraticCurveTo(0, -102, 6, -122);
+      ctx.moveTo(-10, -94);
+      ctx.quadraticCurveTo(-40, -110, -64, -108);
+      ctx.stroke();
+      sakura(-44, -108, 13, 0.3);
+      sakura(6, -126, 11, 1.1);
+      sakura(52, -60, 9, 2.2);
+      sakura(-68, -122, 8, 0.8);
+      // Nụ hoa
+      ctx.fillStyle = '#ff9cc8';
+      [[-24, -116], [24, -108]].forEach(([bx, by]) => {
+        ctx.beginPath();
+        ctx.ellipse(bx, by, 4, 6, 0.4, 0, TAU);
+        ctx.fill();
+      });
+      // Cánh hoa bay lơ lửng (động theo thời gian)
+      const pt = this.swayT;
+      for (let i = 0; i < 7; i++) {
+        const a = pt * (0.6 + (i % 3) * 0.22) + i * 1.7;
+        const px2 = 40 + ((i * 97) % 380) + Math.cos(a) * 26;
+        const py2 = -80 - ((i * 53) % 130) + Math.sin(a * 1.4) * 30;
+        ctx.save();
+        ctx.translate(px2, py2);
+        ctx.rotate(a);
+        ctx.fillStyle = i % 2 ? 'rgba(255,183,213,0.85)' : 'rgba(255,156,200,0.8)';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 5, 2.5, 0, 0, TAU);
+        ctx.fill();
+        ctx.restore();
+      }
 
-      /* --- Thân súng uốn lượn --- */
-      g = ctx.createLinearGradient(0, -40, 0, 45);
-      g.addColorStop(0, '#f0a0d0');
-      g.addColorStop(0.45, '#c04a98');
-      g.addColorStop(1, '#701c58');
+      /* --- 5. Mặt nạ Kabuki (oni đỏ) gắn bên hông báng --- */
+      ctx.save();
+      ctx.translate(-56, 26);
+      ctx.rotate(-0.12);
+      // Dây treo vàng
+      ctx.strokeStyle = GOLD;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, -22);
+      ctx.quadraticCurveTo(14, -8, 10, 6);
+      ctx.stroke();
+      // Sừng
+      ctx.fillStyle = GOLD_DK;
+      ctx.beginPath();
+      ctx.moveTo(-14, -20);
+      ctx.quadraticCurveTo(-22, -38, -8, -40);
+      ctx.quadraticCurveTo(-12, -28, -6, -20);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(14, -20);
+      ctx.quadraticCurveTo(22, -38, 8, -40);
+      ctx.quadraticCurveTo(12, -28, 6, -20);
+      ctx.closePath();
+      ctx.fill();
+      // Mặt nạ
+      g = ctx.createLinearGradient(0, -22, 0, 26);
+      g.addColorStop(0, '#fdf6ec');
+      g.addColorStop(1, '#e8d0b8');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(-16, -18);
+      ctx.quadraticCurveTo(-22, 4, -10, 20);
+      ctx.quadraticCurveTo(0, 28, 10, 20);
+      ctx.quadraticCurveTo(22, 4, 16, -18);
+      ctx.quadraticCurveTo(0, -26, -16, -18);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#c0392b';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // Mắt + miệng + răng nanh + má đỏ kabuki
+      ctx.fillStyle = '#d8353a';
+      ctx.beginPath(); ctx.ellipse(-7, -6, 4.5, 3, 0.25, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(7, -6, 4.5, 3, -0.25, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#d8353a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 8, 6, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.stroke();
+      ctx.fillStyle = '#fdf6ec';
+      ctx.beginPath(); ctx.moveTo(-5, 10); ctx.lineTo(-3, 15); ctx.lineTo(-1, 10); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(1, 10); ctx.lineTo(3, 15); ctx.lineTo(5, 10); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(216,53,58,0.55)';
+      ctx.beginPath(); ctx.ellipse(-11, 2, 4, 2.5, 0, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(11, 2, 4, 2.5, 0, 0, TAU); ctx.fill();
+      ctx.restore();
+
+      /* --- 6. Bé gái chibi ngồi trên đệm đỡ má --- */
+      ctx.save();
+      ctx.translate(14, -44);
+      // Chân buông + giày đỏ
+      ctx.strokeStyle = '#f0e0d0';
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-7, 14); ctx.lineTo(-9, 30);
+      ctx.moveTo(7, 14); ctx.lineTo(10, 29);
+      ctx.stroke();
+      ctx.fillStyle = '#d8353a';
+      ctx.beginPath(); ctx.ellipse(-10, 33, 5, 3.5, 0, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(11, 32, 5, 3.5, 0, 0, TAU); ctx.fill();
+      // Váy trắng viền hồng
+      g = ctx.createLinearGradient(0, -6, 0, 18);
+      g.addColorStop(0, '#ffffff');
+      g.addColorStop(1, '#f3d9e8');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(-9, -4);
+      ctx.quadraticCurveTo(-14, 8, -13, 16);
+      ctx.lineTo(13, 16);
+      ctx.quadraticCurveTo(14, 8, 9, -4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#f0a0c8';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-12, 13); ctx.lineTo(12, 13);
+      ctx.stroke();
+      // Tay ôm đầu gối
+      ctx.strokeStyle = '#f5e6da';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(-8, -2); ctx.quadraticCurveTo(-13, 6, -8, 10);
+      ctx.moveTo(8, -2); ctx.quadraticCurveTo(13, 6, 8, 10);
+      ctx.stroke();
+      // Đầu + tóc nâu
+      ctx.fillStyle = '#f8e8dc';
+      ctx.beginPath(); ctx.arc(0, -14, 11, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#6a4a34';
+      ctx.beginPath(); ctx.arc(0, -16, 11.5, Math.PI * 0.95, Math.PI * 2.05); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(-10, -12, 3, 6, 0.2, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(10, -12, 3, 6, -0.2, 0, TAU); ctx.fill();
+      // Beret đỏ với nút vàng
+      ctx.fillStyle = '#e04848';
+      ctx.beginPath(); ctx.ellipse(0, -24, 12.5, 6.5, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = GOLD;
+      ctx.beginPath(); ctx.arc(0, -27, 2.2, 0, TAU); ctx.fill();
+      // Mắt + má hồng
+      ctx.fillStyle = '#3a2a20';
+      ctx.beginPath(); ctx.arc(-4, -13, 1.4, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(4, -13, 1.4, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(255,130,150,0.6)';
+      ctx.beginPath(); ctx.arc(-7, -10, 2.2, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(7, -10, 2.2, 0, TAU); ctx.fill();
+      ctx.restore();
+
+      /* --- 7. Thân súng (receiver) ngọc trai hồng + hoa văn vàng --- */
+      g = ctx.createLinearGradient(0, -38, 0, 42);
+      g.addColorStop(0, '#ffd9ef');
+      g.addColorStop(0.4, '#eb96cc');
+      g.addColorStop(0.75, '#c05a9e');
+      g.addColorStop(1, '#7c2a62');
       ctx.fillStyle = g;
       ctx.beginPath();
       ctx.moveTo(96, -34);
-      ctx.quadraticCurveTo(220, -46, 330, -30);
-      ctx.lineTo(338, 36);
-      ctx.quadraticCurveTo(210, 50, 98, 40);
+      ctx.quadraticCurveTo(220, -46, 338, -32);
+      ctx.lineTo(344, 34);
+      ctx.quadraticCurveTo(215, 48, 100, 38);
       ctx.closePath();
       ctx.fill();
-      ctx.strokeStyle = '#e8c56a';
-      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = GOLD;
+      ctx.lineWidth = 3;
       ctx.stroke();
-      // Gân vàng trên thân
-      ctx.strokeStyle = 'rgba(232,197,106,0.65)';
-      ctx.lineWidth = 2;
+      // Sọc iridescent chuyển màu
+      g = ctx.createLinearGradient(100, 0, 340, 0);
+      g.addColorStop(0, 'rgba(174,242,255,0.28)');
+      g.addColorStop(0.5, 'rgba(217,184,255,0.22)');
+      g.addColorStop(1, 'rgba(255,214,238,0.28)');
+      ctx.fillStyle = g;
+      ctx.fillRect(102, -18, 238, 10);
+      // Hoa văn filigree cuộn vàng
+      curl(150, 8, 14, 1);
+      curl(210, -2, 16, -1);
+      curl(268, 10, 13, 1);
+      // Gân viền vàng song song
+      ctx.strokeStyle = 'rgba(232,197,106,0.7)';
+      ctx.lineWidth = 1.6;
       ctx.beginPath();
-      ctx.moveTo(110, -22);
-      ctx.quadraticCurveTo(220, -32, 326, -20);
-      ctx.moveTo(112, 28);
-      ctx.quadraticCurveTo(220, 38, 330, 26);
+      ctx.moveTo(104, -26);
+      ctx.quadraticCurveTo(220, -36, 334, -25);
+      ctx.moveTo(106, 30);
+      ctx.quadraticCurveTo(218, 40, 336, 27);
       ctx.stroke();
-      // Khấc trang trí
-      ctx.fillStyle = 'rgba(90,26,72,0.8)';
-      for (let i = 0; i < 5; i++) {
-        ctx.beginPath();
-        ctx.ellipse(140 + i * 42, 4, 7, 13, 0, 0, TAU);
-        ctx.fill();
-      }
+      // Ray picatinny vàng
+      ctx.fillStyle = GOLD_DK;
+      ctx.fillRect(120, -43, 214, 9);
+      ctx.fillStyle = GOLD;
+      for (let i = 0; i < 12; i++) ctx.fillRect(124 + i * 17, -43, 8, 3.5);
 
-      /* --- Lõi tinh thể năng lượng phát sáng --- */
-      ctx.save();
-      ctx.shadowColor = '#7fe8ff';
-      ctx.shadowBlur = 28;
-      g = ctx.createRadialGradient(298, 2, 3, 298, 2, 30);
-      g.addColorStop(0, '#ffffff');
-      g.addColorStop(0.35, '#aef2ff');
-      g.addColorStop(0.75, 'rgba(90,190,255,0.55)');
-      g.addColorStop(1, 'rgba(90,190,255,0)');
+      /* --- 8. Báng cầm (pistol grip) --- */
+      g = ctx.createLinearGradient(0, 30, 0, 118);
+      g.addColorStop(0, '#c05a9e');
+      g.addColorStop(1, '#5a1a48');
       ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.ellipse(298, 2, 26, 32, 0, 0, TAU);
-      ctx.fill();
-      ctx.restore();
-      // Vỏ bọc tinh thể
-      ctx.strokeStyle = '#e8c56a';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.ellipse(298, 2, 27, 33, 0, 0, TAU);
-      ctx.stroke();
-
-      /* --- Báng cầm --- */
-      g = ctx.createLinearGradient(0, 30, 0, 115);
-      g.addColorStop(0, '#8e2a6e');
-      g.addColorStop(1, '#3c1030');
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.moveTo(152, 34);
-      ctx.quadraticCurveTo(206, 44, 196, 78);
-      ctx.quadraticCurveTo(188, 112, 158, 118);
-      ctx.quadraticCurveTo(136, 96, 142, 60);
+      ctx.moveTo(150, 32);
+      ctx.quadraticCurveTo(204, 40, 196, 80);
+      ctx.quadraticCurveTo(188, 114, 156, 118);
+      ctx.quadraticCurveTo(132, 96, 140, 58);
       ctx.closePath();
       ctx.fill();
-      ctx.strokeStyle = '#e8c56a';
+      ctx.strokeStyle = GOLD;
       ctx.lineWidth = 2;
       ctx.stroke();
-      // Đinh tán vàng
-      ctx.fillStyle = '#f5dfa0';
-      [[158, 62], [170, 82], [162, 102]].forEach(([dx, dy]) => {
+      ctx.fillStyle = GOLD_HI;
+      [[158, 62], [170, 84], [162, 104]].forEach(([dx, dy]) => {
         ctx.beginPath(); ctx.arc(dx, dy, 3, 0, TAU); ctx.fill();
       });
 
-      /* --- Cò súng & vành vàng --- */
-      ctx.strokeStyle = '#e8c56a';
+      /* --- 9. Cò súng & vành bảo vệ vàng --- */
+      ctx.strokeStyle = GOLD;
       ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.arc(238, 50, 26, 0.1 * Math.PI, 0.95 * Math.PI);
+      ctx.arc(236, 46, 27, 0.08 * Math.PI, 0.92 * Math.PI);
       ctx.stroke();
-      ctx.fillStyle = '#ffe9b0';
+      ctx.fillStyle = GOLD_HI;
       ctx.beginPath();
-      ctx.moveTo(232, 30);
-      ctx.quadraticCurveTo(225, 48, 233, 60);
-      ctx.lineTo(242, 55);
-      ctx.quadraticCurveTo(237, 42, 241, 32);
+      ctx.moveTo(230, 26);
+      ctx.quadraticCurveTo(223, 44, 231, 56);
+      ctx.lineTo(240, 51);
+      ctx.quadraticCurveTo(235, 40, 239, 28);
       ctx.closePath();
       ctx.fill();
 
-      /* --- Băng đạn tinh thể --- */
-      g = ctx.createLinearGradient(0, 36, 0, 110);
-      g.addColorStop(0, '#d76ab0');
-      g.addColorStop(1, '#6a1c54');
+      /* --- 10. Băng đạn pha lê khung vàng --- */
+      g = ctx.createLinearGradient(0, 36, 0, 112);
+      g.addColorStop(0, '#f0a0d0');
+      g.addColorStop(1, '#8e2a6e');
       ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.moveTo(280, 36);
-      ctx.quadraticCurveTo(296, 74, 272, 108);
-      ctx.lineTo(238, 96);
-      ctx.quadraticCurveTo(256, 66, 258, 36);
+      ctx.moveTo(276, 34);
+      ctx.quadraticCurveTo(294, 72, 268, 108);
+      ctx.lineTo(232, 98);
+      ctx.quadraticCurveTo(252, 66, 254, 34);
       ctx.closePath();
       ctx.fill();
-      ctx.strokeStyle = '#e8c56a';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = GOLD;
+      ctx.lineWidth = 2.5;
       ctx.stroke();
-      // Ô cửa sổ năng lượng trên băng đạn
+      // Cửa sổ năng lượng phát sáng
       ctx.save();
       ctx.shadowColor = '#7fe8ff';
       ctx.shadowBlur = 12;
-      ctx.fillStyle = 'rgba(140,230,255,0.85)';
-      ctx.fillRect(252, 58, 22, 30);
+      g = ctx.createLinearGradient(0, 56, 0, 90);
+      g.addColorStop(0, 'rgba(140,230,255,0.95)');
+      g.addColorStop(1, 'rgba(90,150,255,0.75)');
+      ctx.fillStyle = g;
+      ctx.fillRect(250, 56, 22, 32);
       ctx.restore();
+      ctx.strokeStyle = GOLD_HI;
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(250, 56, 22, 32);
 
-      /* --- Nòng súng quấn lụa vàng-hồng --- */
-      const bw = 8;
+      /* --- 11. Nòng súng hồng quấn vàng --- */
+      const bw = 9;
       g = ctx.createLinearGradient(0, -bw, 0, bw);
       g.addColorStop(0, '#ffd6ee');
       g.addColorStop(0.5, '#d76ab0');
       g.addColorStop(1, '#8e2a6e');
       ctx.fillStyle = g;
-      ctx.fillRect(336, -bw, 250, bw * 2);
-      // Vòng quấn vàng xen kẽ
-      ctx.fillStyle = '#e8c56a';
-      for (let i = 0; i < 6; i++) {
-        ctx.fillRect(352 + i * 40, -bw - 1, 10, bw * 2 + 2);
-      }
+      ctx.fillRect(336, -bw, 226, bw * 2);
+      ctx.fillStyle = GOLD;
+      for (let i = 0; i < 5; i++) ctx.fillRect(352 + i * 42, -bw - 1, 10, bw * 2 + 2);
+      // Đầu ruồi
+      ctx.fillStyle = GOLD_DK;
+      ctx.fillRect(430, -bw - 8, 6, 9);
 
-      /* --- Giảm thanh nón tiên --- */
-      g = ctx.createLinearGradient(0, -14, 0, 14);
-      g.addColorStop(0, '#f0a0d0');
-      g.addColorStop(0.5, '#b03a86');
+      /* --- 12. Giảm thanh lớn "ngọc trai" --- */
+      const supX = 560, supLen = 158;
+      g = ctx.createLinearGradient(0, -17, 0, 17);
+      g.addColorStop(0, '#ffd9ef');
+      g.addColorStop(0.5, '#c86aa8');
       g.addColorStop(1, '#5a1a48');
       ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.moveTo(586, -15);
-      ctx.lineTo(700, -10);
-      ctx.lineTo(700, 10);
-      ctx.lineTo(586, 15);
+      ctx.moveTo(supX, -16);
+      ctx.lineTo(supX + supLen - 8, -13);
+      ctx.quadraticCurveTo(supX + supLen + 6, 0, supX + supLen - 8, 13);
+      ctx.lineTo(supX, 16);
+      ctx.quadraticCurveTo(supX - 8, 0, supX, -16);
       ctx.closePath();
       ctx.fill();
-      ctx.strokeStyle = '#e8c56a';
+      ctx.strokeStyle = GOLD;
       ctx.lineWidth = 2;
       ctx.stroke();
-      // Vòng vàng
-      ctx.fillStyle = '#e8c56a';
-      ctx.fillRect(600, -14, 6, 28);
-      ctx.fillRect(640, -13, 6, 26);
-      ctx.fillRect(678, -11, 6, 22);
-      // Khe thoát tinh thể phát sáng
+      // Đai vàng
+      ctx.fillStyle = GOLD;
+      [[574, 15], [612, 16], [652, 15], [690, 13]].forEach(([bx, bh]) => {
+        ctx.fillRect(bx, -bh, 7, bh * 2);
+      });
+      // Khe phát sáng tinh thể
       ctx.save();
       ctx.shadowColor = '#7fe8ff';
       ctx.shadowBlur = 10;
       ctx.fillStyle = 'rgba(140,230,255,0.9)';
-      ctx.fillRect(618, -6, 12, 12);
-      ctx.fillRect(656, -5, 12, 10);
+      ctx.fillRect(592, -5, 12, 10);
+      ctx.fillRect(632, -5, 12, 10);
+      ctx.fillRect(670, -4, 12, 8);
       ctx.restore();
-      // Chỏm đầu nòng
-      ctx.fillStyle = '#f5dfa0';
+      // Núm đầu nòng + ngọc hồng
+      ctx.fillStyle = GOLD_HI;
       ctx.beginPath();
-      ctx.arc(702, 0, 7, 0, TAU);
+      ctx.arc(supX + supLen + 4, 0, 8, 0, TAU);
       ctx.fill();
-
-      /* --- Ống ngắm hoàng gia --- */
+      ctx.save();
+      ctx.shadowColor = '#ff9ae0';
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = '#ffb7d5';
+      ctx.beginPath();
+      ctx.arc(supX + supLen + 4, 0, 4, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+      /* --- 13. Ống ngắm lăng kính hoàng gia --- */
       // Chân đỡ vàng
-      ctx.fillStyle = '#e8c56a';
-      ctx.fillRect(186, -52, 16, 14);
-      ctx.fillRect(318, -52, 16, 14);
-      // Thân ống tím
-      g = ctx.createLinearGradient(0, -84, 0, -50);
-      g.addColorStop(0, '#a04a88');
-      g.addColorStop(0.5, '#6a2a58');
-      g.addColorStop(1, '#33102a');
+      ctx.fillStyle = GOLD_DK;
+      ctx.fillRect(186, -54, 16, 16);
+      ctx.fillRect(318, -54, 16, 16);
+      ctx.fillStyle = GOLD;
+      ctx.fillRect(184, -57, 20, 5);
+      ctx.fillRect(316, -57, 20, 5);
+      // Thân ống tím-hồng
+      g = ctx.createLinearGradient(0, -88, 0, -50);
+      g.addColorStop(0, '#c86aa8');
+      g.addColorStop(0.5, '#8e3a78');
+      g.addColorStop(1, '#4a1450');
       ctx.fillStyle = g;
-      ctx.fillRect(172, -84, 200, 32);
-      ctx.strokeStyle = '#e8c56a';
+      ctx.fillRect(172, -86, 200, 34);
+      ctx.strokeStyle = GOLD;
       ctx.lineWidth = 2;
-      ctx.strokeRect(172, -84, 200, 32);
+      ctx.strokeRect(172, -86, 200, 34);
+      // Vòng chia độ giữa thân
+      ctx.fillStyle = GOLD;
+      ctx.fillRect(258, -89, 14, 40);
       // Chuông kính trước + lens xanh phát sáng
-      ctx.fillStyle = '#8e2a6e';
+      ctx.fillStyle = '#a04a88';
       ctx.beginPath();
-      ctx.ellipse(388, -68, 28, 23, 0, 0, TAU);
+      ctx.ellipse(384, -69, 26, 24, 0, 0, TAU);
       ctx.fill();
-      ctx.strokeStyle = '#e8c56a';
+      ctx.strokeStyle = GOLD;
+      ctx.lineWidth = 2.5;
       ctx.stroke();
       ctx.save();
       ctx.shadowColor = '#5ad0ff';
-      ctx.shadowBlur = 22;
-      g = ctx.createRadialGradient(390, -70, 2, 390, -70, 21);
+      ctx.shadowBlur = 24;
+      g = ctx.createRadialGradient(386, -71, 2, 386, -71, 20);
       g.addColorStop(0, '#ffffff');
       g.addColorStop(0.4, '#8ce4ff');
       g.addColorStop(1, 'rgba(40,120,220,0.35)');
       ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.ellipse(390, -69, 22, 17, 0, 0, TAU);
+      ctx.ellipse(386, -70, 21, 18, 0, 0, TAU);
       ctx.fill();
       ctx.restore();
       // Mắt kính sau
-      ctx.fillStyle = '#6a2a58';
+      ctx.fillStyle = '#7c2a62';
       ctx.beginPath();
-      ctx.ellipse(160, -68, 15, 18, 0, 0, TAU);
+      ctx.ellipse(160, -69, 15, 19, 0, 0, TAU);
       ctx.fill();
-      ctx.strokeStyle = '#e8c56a';
+      ctx.strokeStyle = GOLD;
+      ctx.lineWidth = 2;
       ctx.stroke();
-      // Núm chỉnh vàng + hạt tinh thể
-      ctx.fillStyle = '#e8c56a';
-      ctx.fillRect(246, -97, 36, 15);
+      ctx.fillStyle = '#2a0a24';
       ctx.beginPath();
-      ctx.arc(264, -97, 9, Math.PI, 0);
+      ctx.ellipse(158, -69, 9, 13, 0, 0, TAU);
+      ctx.fill();
+      // Núm chỉnh độ cao vàng + ruby hồng
+      ctx.fillStyle = GOLD;
+      ctx.fillRect(246, -103, 36, 15);
+      ctx.beginPath();
+      ctx.arc(264, -103, 9, Math.PI, 0);
       ctx.fill();
       ctx.save();
-      ctx.shadowColor = '#7fe8ff';
+      ctx.shadowColor = '#ff7bb0';
       ctx.shadowBlur = 8;
-      ctx.fillStyle = '#aef2ff';
+      ctx.fillStyle = '#ff9cc8';
       ctx.beginPath();
-      ctx.arc(264, -99, 4, 0, TAU);
+      ctx.arc(264, -105, 4, 0, TAU);
       ctx.fill();
       ctx.restore();
-
-      /* --- Chân chống kiểu vũ công --- */
-      ctx.strokeStyle = '#d76ab0';
-      ctx.lineWidth = 6;
-      ctx.lineCap = 'round';
+      // Núm chỉnh bên
+      ctx.fillStyle = GOLD_DK;
       ctx.beginPath();
-      ctx.moveTo(430, 10);
-      ctx.quadraticCurveTo(400, 60, 372, 96);
-      ctx.moveTo(430, 10);
-      ctx.quadraticCurveTo(462, 58, 492, 88);
-      ctx.stroke();
-      // Khớp vàng
-      ctx.fillStyle = '#e8c56a';
-      ctx.beginPath(); ctx.arc(430, 10, 6, 0, TAU); ctx.fill();
-      ctx.beginPath(); ctx.arc(372, 96, 5, 0, TAU); ctx.fill();
-      ctx.beginPath(); ctx.arc(492, 88, 5, 0, TAU); ctx.fill();
+      ctx.arc(300, -69, 6, 0, TAU);
+      ctx.fill();
 
-      /* --- Tay cầm (găng tím hồng) --- */
+      /* --- 14. Tay người cầm (găng tím hồng) --- */
       this.drawGlove(ctx, 168, 62, 0.75, '#c05a9e', '#5a2450', '#7a3a6e');
       this.drawGlove(ctx, 452, 2, 1.05, '#c05a9e', '#5a2450', '#7a3a6e');
 
-      /* --- Hạt lấp lánh bay quanh súng --- */
+      /* --- 15. Hạt lấp lánh thần kỳ bay quanh súng --- */
       const tw = this.swayT * 3;
-      ctx.fillStyle = 'rgba(174,242,255,0.9)';
-      for (let i = 0; i < 6; i++) {
-        const a = tw + i * 1.05;
-        const sxp = 200 + Math.cos(a) * 180;
-        const syp = -30 + Math.sin(a * 1.3) * 60;
-        const szz = 1.5 + Math.abs(Math.sin(a * 2)) * 2;
-        ctx.globalAlpha = 0.4 + Math.abs(Math.sin(a)) * 0.6;
+      for (let i = 0; i < 8; i++) {
+        const a = tw + i * 0.9;
+        const sxp = 140 + Math.cos(a) * 260;
+        const syp = -40 + Math.sin(a * 1.3) * 70;
+        const szz = 1.5 + Math.abs(Math.sin(a * 2)) * 2.2;
+        ctx.globalAlpha = 0.35 + Math.abs(Math.sin(a)) * 0.55;
+        ctx.fillStyle = i % 3 === 0 ? '#aef2ff' : i % 3 === 1 ? '#ffd9ef' : '#fff6d8';
         ctx.beginPath();
         ctx.arc(sxp, syp, szz, 0, TAU);
         ctx.fill();
       }
       ctx.globalAlpha = 1;
 
-      /* --- Chớp sáng đầu nòng (hồng-tím) --- */
+      /* --- 16. Chớp sáng đầu nòng (hồng-tím) --- */
       if (kick > 0.8) {
         ctx.save();
         ctx.shadowColor = '#ff9ae0';
-        ctx.shadowBlur = 20;
+        ctx.shadowBlur = 22;
         ctx.fillStyle = `rgba(255,180,235,${(kick - 0.8) * 2.2})`;
         ctx.beginPath();
-        ctx.arc(712, 0, 16, 0, TAU);
+        ctx.arc(supX + supLen + 14, 0, 17, 0, TAU);
         ctx.fill();
         ctx.restore();
       }
